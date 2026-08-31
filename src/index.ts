@@ -2,35 +2,51 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { loadConfig, saveConfig } from "./config.js";
 import { buildPreview } from "./preview.js";
 import { applyPiTheme, showApproval } from "./ui.js";
+import diffRendererExtension from "./vendor/pi-diff/index.js";
 
-const GATED_TOOLS = new Set(["write", "edit", "hashline_edit"]);
+const GATED_TOOLS = new Set(["write", "edit", "hashline_edit", "apply_patch"]);
 
-export default function piApproveDiffs(pi: ExtensionAPI) {
+export default async function piApproveDiffs(pi: ExtensionAPI) {
 	let sessionYolo = false;
-	let config = loadConfig();
+	const config = loadConfig();
+
+	// Approved-change highlighting (green result boxes) — vendored pi-diff machinery.
+	if (config.results) {
+		await diffRendererExtension(pi);
+	}
 
 	pi.registerCommand("approve-diff", {
-		description: "Toggle the write/edit approval gate (on|off|toggle|yolo|status)",
+		description: "Toggle the write/edit approval gate (on|off|toggle|yolo|results on|off|status)",
 		handler: (args, ctx) => {
-			const action = (args ?? "").trim().toLowerCase();
-			if (action === "on") {
+			const [verb, value] = (args ?? "").trim().toLowerCase().split(/\s+/);
+			if (verb === "results") {
+				if (value === "on" || value === "off") {
+					config.results = value === "on";
+					saveConfig(config);
+					ctx.ui.notify(`approve-diffs: result highlighting ${value} — /reload to apply`, "info");
+				} else {
+					ctx.ui.notify(`approve-diffs: result highlighting ${config.results ? "ON" : "OFF"} (usage: /approve-diff results on|off)`, "info");
+				}
+				return;
+			}
+			if (verb === "on") {
 				config.enabled = true;
 				saveConfig(config);
 				ctx.ui.notify("approve-diffs: ON", "info");
-			} else if (action === "off") {
+			} else if (verb === "off") {
 				config.enabled = false;
 				saveConfig(config);
 				ctx.ui.notify("approve-diffs: OFF", "info");
-			} else if (action === "toggle") {
+			} else if (verb === "toggle") {
 				config.enabled = !config.enabled;
 				saveConfig(config);
 				ctx.ui.notify(`approve-diffs: ${config.enabled ? "ON" : "OFF"}`, "info");
-			} else if (action === "yolo") {
+			} else if (verb === "yolo") {
 				sessionYolo = true;
 				ctx.ui.notify("approve-diffs: yolo — not asking again this session", "info");
 			} else {
 				ctx.ui.notify(
-					`approve-diffs: ${config.enabled ? "ON" : "OFF"} · session yolo: ${sessionYolo ? "ON" : "OFF"}`,
+					`approve-diffs: ${config.enabled ? "ON" : "OFF"} · session yolo: ${sessionYolo ? "ON" : "OFF"} · results: ${config.results ? "ON" : "OFF"}`,
 					"info",
 				);
 			}

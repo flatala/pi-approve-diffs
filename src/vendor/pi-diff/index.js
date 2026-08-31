@@ -1558,27 +1558,7 @@ export default async function diffRendererExtension(pi) {
                 text.setText(formatToolFrameHeaderText({ label, filePath: fp, theme, suffix, topPad: 0, bottomPad: 1 }));
                 return text;
             }
-            if (args?.content && ctx.argsComplete && isNew) {
-                const title = formatToolFrameHeader({ label, filePath: fp, theme, width: w, topPad: 0, bottomPad: 1 });
-                const previewKey = `create:${sharedThemeCacheKey(theme)}:${fp}:${String(args.content).length}`;
-                if (ctx.state._previewKey !== previewKey) {
-                    ctx.state._previewKey = previewKey;
-                    ctx.state._previewText = title;
-                    const lg = detectDiffLanguage(fp);
-                    hlBlock(args.content, lg)
-                        .then((lines) => {
-                        if (ctx.state._previewKey !== previewKey)
-                            return;
-                        ctx.state._previewText = `${title}\n${padDiffBody(lines.join("\n"))}`;
-                        ctx.invalidate();
-                    })
-                        .catch(() => { });
-                }
-                clearToolHeaderBg(text);
-                text.setText(ctx.state._previewText ?? title);
-                return text;
-            }
-            setToolHeaderBg(text);
+                        setToolHeaderBg(text);
             text.setText(formatToolFrameHeaderText({ label, filePath: fp, theme, suffix: stats, topPad: 0, bottomPad: 1 }));
             return text;
         },

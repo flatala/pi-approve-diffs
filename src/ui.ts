@@ -4,7 +4,7 @@ import type { Preview } from "./preview.js";
 
 const { renderSplit, renderUnified } = __testing;
 const shouldUseSplit = __testing.shouldUseSplit as
-	| ((diff: Preview["diff"], tw: number | undefined, maxRows?: number) => boolean)
+	| ((diff: NonNullable<Preview["sections"][number]["diff"]>, tw: number | undefined, maxRows?: number) => boolean)
 	| undefined;
 
 export type Decision =
@@ -114,10 +114,7 @@ class ApprovalScreen implements Component {
 		const max = Math.max(0, this.lines.length - rows);
 		this.offset = Math.min(this.offset, max);
 
-		const stats = this.theme.fg(
-			"dim",
-			` +${p.diff.added} -${p.diff.removed} · ${p.toolName} · ${p.path}`,
-		);
+		const stats = this.theme.fg("dim", ` +${p.added} -${p.removed} · ${p.toolName} · ${p.path}`);
 		const header = [
 			this.theme.bold(this.theme.fg("accent", "approve-diffs")) + stats,
 			...p.warnings.map((w) => this.theme.fg("warning", ` ⚠ ${w}`)),
@@ -145,10 +142,19 @@ class ApprovalScreen implements Component {
 	invalidate(): void {}
 }
 
-async function renderView(preview: Preview, view: "split" | "unified"): Promise<string[]> {
+async function renderSections(preview: Preview, view: "split" | "unified"): Promise<string[]> {
 	const render = view === "split" ? renderSplit : renderUnified;
-	const text = await render(preview.diff, preview.language as never);
-	return text.split("\n");
+	const out: string[] = [];
+	for (const section of preview.sections) {
+		if (!section.diff) {
+			out.push(section.path + (section.note ? ` — ${section.note}` : ""));
+			continue;
+		}
+		if (preview.sections.length > 1) out.push(section.path);
+		const text = await render(section.diff, section.language as never);
+		out.push(...text.split("\n"));
+	}
+	return out;
 }
 
 export async function showApproval(
@@ -163,13 +169,16 @@ export async function showApproval(
 	preview: Preview,
 ): Promise<Decision> {
 	const [splitLines, unifiedLines] = await Promise.all([
-		renderView(preview, "split"),
-		renderView(preview, "unified"),
+		renderSections(preview, "split"),
+		renderSections(preview, "unified"),
 	]);
 
 	// width/balance-aware default, mirroring pi-diff's own wrapper
+	const firstDiff = preview.sections.find((s) => s.diff)?.diff;
 	const initialView: "split" | "unified" =
-		shouldUseSplit?.(preview.diff, process.stdout.columns ?? 120) === false ? "unified" : "split";
+		firstDiff && shouldUseSplit?.(firstDiff, process.stdout.columns ?? 120) === false
+			? "unified"
+			: "split";
 
 	return ctx.ui.custom<Decision>(
 		(tui, theme, _kb, done) =>

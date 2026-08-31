@@ -5,6 +5,8 @@ import { dirname, join } from "node:path";
 export type Config = {
 	enabled: boolean;
 	defaultView: "auto" | "split" | "unified";
+	/** Render approved changes as highlighted result boxes (vendored pi-diff machinery). */
+	results: boolean;
 };
 
 export function configPath(): string {
@@ -19,9 +21,10 @@ export function loadConfig(): Config {
 			enabled: raw.enabled !== false,
 			defaultView:
 				raw.defaultView === "split" || raw.defaultView === "unified" ? raw.defaultView : "auto",
+			results: raw.results !== false,
 		};
 	} catch {
-		return { enabled: true, defaultView: "auto" };
+		return { enabled: true, defaultView: "auto", results: true };
 	}
 }
 
