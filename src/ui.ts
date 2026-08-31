@@ -16,9 +16,12 @@ export type Decision =
 type TuiLike = { terminal: { rows: number; columns: number } };
 
 /** Apply pi's theme to the vendored renderer so diff backgrounds match the UI. */
-export function applyPiTheme(theme: unknown): void {
-	// ponytail: stale transforms may miss this export — degrade to default palette
-	if (theme && typeof __testing.resolveDiffColors === "function") __testing.resolveDiffColors(theme);
+/** Reset the vendored renderer to its default (black) palette.
+ *  Pre-approval: dark background, only +/- lines carry green/red.
+ *  Post-approval the vendored result renderer re-derives the green box from the theme. */
+export function resetPalette(): void {
+	// ponytail: stale transforms may miss this export — degrade to current palette
+	if (typeof __testing.resolveDiffColors === "function") __testing.resolveDiffColors({});
 }
 
 const printable = (data: string) => data.length > 0 && ![...data].some((ch) => ch < " ");
@@ -168,6 +171,7 @@ export async function showApproval(
 	},
 	preview: Preview,
 ): Promise<Decision> {
+	resetPalette();
 	const [splitLines, unifiedLines] = await Promise.all([
 		renderSections(preview, "split"),
 		renderSections(preview, "unified"),

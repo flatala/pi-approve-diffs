@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { loadConfig, saveConfig } from "./config.js";
 import { buildPreview } from "./preview.js";
-import { applyPiTheme, showApproval } from "./ui.js";
+import { resetPalette, showApproval } from "./ui.js";
 import diffRendererExtension from "./vendor/pi-diff/index.js";
 
 const GATED_TOOLS = new Set(["write", "edit", "hashline_edit", "apply_patch"]);
@@ -60,7 +60,6 @@ export default async function piApproveDiffs(pi: ExtensionAPI) {
 		const preview = await buildPreview(event.toolName, event.input as never);
 		if (!preview) return;
 
-		applyPiTheme((ctx.ui as { theme?: unknown }).theme);
 		const decision = await showApproval(ctx as never, preview);
 		if (decision.action === "approve") return;
 		if (decision.action === "yolo") {
