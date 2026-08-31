@@ -18,7 +18,7 @@ A [pi](https://pi.dev) extension that gates pi's file-mutating tools (`write`, `
  ❯ ▐ Approve                 ▌ y
    ▐ Approve all (session)   ▌ a
    ▐ Decline                 ▌ n
-   ▐ Steer — type guidance    ▌ s
+   ▐ Steer — type guidance   ▌ s
 
  tab unified · j/k scroll · PgUp/PgDn page
 ──────────────────────────────────────────────────────────────────
