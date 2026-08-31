@@ -85,7 +85,7 @@ class ApprovalScreen implements Component {
 		// docked in the editor slot: cap the diff window at ~60% of the terminal,
 		// minus header/warnings/blank/action list/hint/border chrome
 		const capped = Math.min(Math.floor(this.tui.terminal.rows * 0.6), 40);
-		return Math.max(3, capped - 10 - this.preview.warnings.length);
+		return Math.max(3, capped - 11 - this.preview.warnings.length);
 	}
 
 	handleInput(data: string): void {
@@ -184,7 +184,7 @@ class ApprovalScreen implements Component {
 					: this.theme.fg("dim", ` tab ${this.effectiveView() === "split" ? "unified" : "split"} · j/k scroll · PgUp/PgDn page${scrolled}`);
 
 		const border = this.theme.fg("dim", "─".repeat(Math.max(0, width)));
-		return [border, ...header, "", ...window_, "", ...actionLines, bottom, border].map((l) => truncateToWidth(l, width));
+		return [border, ...header, "", ...window_, "", ...actionLines, "", bottom, border].map((l) => truncateToWidth(l, width));
 	}
 
 	invalidate(): void {}
