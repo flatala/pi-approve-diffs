@@ -28,6 +28,16 @@ The diff renders with a dark background and green/red only on changed lines —
 no giant colored slab. After you approve, the change lands and the result
 renders as a green-highlighted box in the transcript (toggleable, see below).
 
+## Examples
+
+| Edit approval — split view | New-file write |
+|---|---|
+| ![Edit approval with side-by-side diff and action buttons](media/example-1-edit-split.png) | ![New-file write, all additions](media/example-2-new-file.png) |
+
+![Multi-file apply_patch rendered as per-file sections](media/example-3-multi-file.png)
+
+*Multi-file `apply_patch` — each file gets its own dark header and framed diff.*
+
 ## Install
 
 ```bash
