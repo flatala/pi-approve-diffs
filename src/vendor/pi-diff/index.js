@@ -1332,7 +1332,7 @@ export default async function diffRendererExtension(pi) {
                     width,
                     topPad: 0,
                     bottomPad: 1,
-                }), parsed, detectDiffLanguage(change.path), MAX_PREVIEW_LINES, theme, ctx, { previewBottomPad: 1, compactGutter: true });
+                }), parsed, detectDiffLanguage(change.path), MAX_PREVIEW_LINES, theme, ctx, { previewBottomPad: 1, previewTopPad: 1, compactGutter: true });
                 return true;
             }
             return false;
@@ -1362,7 +1362,7 @@ export default async function diffRendererExtension(pi) {
             width,
             topPad: 0,
             bottomPad: 1,
-        }), { lines, added, removed, chars }, mixedLanguage ? undefined : language, MAX_PREVIEW_LINES, theme, ctx, { previewBottomPad: 1, compactGutter: true });
+        }), { lines, added, removed, chars }, mixedLanguage ? undefined : language, MAX_PREVIEW_LINES, theme, ctx, { previewBottomPad: 1, previewTopPad: 1, compactGutter: true });
         return true;
     }
     function editEditsCountLabel(edits, diffLines, theme) {
@@ -1442,8 +1442,12 @@ export default async function diffRendererExtension(pi) {
         const joinHeaderBody = (width, body) => {
             const h = header(width);
             const bottomPad = Math.max(0, frame?.previewBottomPad ?? 0);
+            const topPad = Math.max(0, frame?.previewTopPad ?? 0);
             const bottom = Array.from({ length: bottomPad }, () => bgLine("", width)).join("\n");
-            const main = h ? `${h}\n${body}` : body;
+            const top = Array.from({ length: topPad }, () => bgLine("", width)).join("\n");
+            // pi-approve-diffs: green padding rows above the body, mirroring bottom
+            const bodyPadded = top ? `${top}\n${body}` : body;
+            const main = h ? `${h}\n${bodyPadded}` : bodyPadded;
             return bottom ? `${main}\n${bottom}` : main;
         };
         text.__piDiffTask = {
@@ -1452,7 +1456,7 @@ export default async function diffRendererExtension(pi) {
             invalidate: ctx.invalidate,
             key: (width) => {
                 const headerKey = frame?.omitHeader ? "" : header(width);
-                return `${keyPrefix}:${themeKey}:${width}:${headerKey}:${diff.lines.length}:${language ?? ""}:${frame?.omitHeader ? "oh" : "h"}:${frame?.headerLeftPad ?? 0}:${frame?.topPad ?? 0}:${frame?.bottomPad ?? 0}:${frame?.previewBottomPad ?? 0}:${frame?.compactGutter ? "cg" : "rg"}:${frame?.bodyLeftPad ?? 0}`;
+                return `${keyPrefix}:${themeKey}:${width}:${headerKey}:${diff.lines.length}:${language ?? ""}:${frame?.omitHeader ? "oh" : "h"}:${frame?.headerLeftPad ?? 0}:${frame?.topPad ?? 0}:${frame?.bottomPad ?? 0}:${frame?.previewBottomPad ?? 0}:${frame?.previewTopPad ?? 0}:${frame?.compactGutter ? "cg" : "rg"}:${frame?.bodyLeftPad ?? 0}`;
             },
             render: async (width) => joinHeaderBody(width, await (frame?.compactGutter
                 ? renderPaddedCompactDiff(diff, language, maxLines, colors, width, frame?.bodyLeftPad)
@@ -1783,7 +1787,7 @@ export default async function diffRendererExtension(pi) {
             if (d?._type === "editInfo" && d.diff) {
                 setDiffPreviewTask(text, "ed", "", d.diff, d.language, MAX_PREVIEW_LINES, theme, ctx, {
                     omitHeader: true,
-                    previewBottomPad: EDIT_DIFF_RESULT_FRAME.previewBottomPad,
+                    previewBottomPad: EDIT_DIFF_RESULT_FRAME.previewBottomPad, previewTopPad: 1,
                     compactGutter: true,
                     bodyLeftPad: EDIT_DIFF_RESULT_FRAME.bodyLeftPad,
                 });
@@ -1794,7 +1798,7 @@ export default async function diffRendererExtension(pi) {
                 if (diff) {
                     setDiffPreviewTask(text, "me", "", diff, language, MAX_PREVIEW_LINES, theme, ctx, {
                         omitHeader: true,
-                        previewBottomPad: EDIT_DIFF_RESULT_FRAME.previewBottomPad,
+                        previewBottomPad: EDIT_DIFF_RESULT_FRAME.previewBottomPad, previewTopPad: 1,
                         compactGutter: true,
                         bodyLeftPad: EDIT_DIFF_RESULT_FRAME.bodyLeftPad,
                     });
