@@ -1337,32 +1337,41 @@ export default async function diffRendererExtension(pi) {
             }
             return false;
         }
+        // pi-approve-diffs: render each file as its own section — a plain (dark)
+        // header row with action + path + stats, then green-padded diff body —
+        // instead of one merged green slab with no per-file separation.
         clearToolHeaderBg(text);
-        let added = 0;
-        let removed = 0;
-        let chars = 0;
-        let language;
-        let mixedLanguage = false;
-        const lines = [];
-        for (const change of previewable) {
-            const parsed = parseDiff(change.oldContent ?? "", change.newContent ?? "");
-            const nextLanguage = detectDiffLanguage(change.path);
-            if (!language)
-                language = nextLanguage;
-            else if (language !== nextLanguage)
-                mixedLanguage = true;
-            added += parsed.added;
-            removed += parsed.removed;
-            chars += parsed.chars;
-            lines.push(...parsed.lines);
+        const colors = resolvePreviewDiffColors(theme);
+        const sections = previewable.map((change) => ({
+            change,
+            parsed: parseDiff(change.oldContent ?? "", change.newContent ?? ""),
+            language: detectDiffLanguage(change.path),
+        }));
+        const pk = `apm:${sharedThemeCacheKey(theme)}:${sections.length}:${sections
+            .map((s) => `${s.change.path}:${s.parsed.added}:${s.parsed.removed}`)
+            .join("|")}`;
+        if (ctx.state._apmk !== pk) {
+            ctx.state._apmk = pk;
+            text.__piDiffTask = {
+                placeholder: padDiffBody(theme.fg("muted", `rendering ${sections.length} changes…`)),
+                fallback: theme.fg("muted", `${sections.length} changes`),
+                invalidate: ctx.invalidate,
+                key: (width) => `${pk}:${width}`,
+                render: async (width) => {
+                    const out = [];
+                    for (const s of sections) {
+                        const label = s.change.action === "add" ? "add" : s.change.action === "delete" ? "delete" : "update";
+                        const hdr = `${theme.fg("toolTitle", theme.bold(formatToolHeaderName(label)))} ${formatToolHeaderPath(theme, sp(s.change.path))}  ${summarizeThemed(s.parsed.added, s.parsed.removed, theme)}`;
+                        out.push(hdr);
+                        out.push(bgLine("", width));
+                        const body = await renderPaddedCompactDiff(s.parsed, s.language, MAX_PREVIEW_LINES, colors, width);
+                        out.push(body);
+                        out.push(bgLine("", width));
+                    }
+                    return out.join("\n");
+                },
+            };
         }
-        setDiffPreviewTask(text, "ap", (width) => formatToolFrameHeader({
-            meta: `${theme.fg("toolTitle", theme.bold(formatToolHeaderName("apply_patch")))}${TOOL_RESULT_INDENT}${theme.fg("muted", `(${previewable.length} changes)`)} ${summarizeThemed(added, removed, theme)}${TOOL_RESULT_INDENT}${summarizeApplyPatchChanges(previewable, theme)}`,
-            theme,
-            width,
-            topPad: 0,
-            bottomPad: 1,
-        }), { lines, added, removed, chars }, mixedLanguage ? undefined : language, MAX_PREVIEW_LINES, theme, ctx, { previewBottomPad: 1, previewTopPad: 1, compactGutter: true });
         return true;
     }
     function editEditsCountLabel(edits, diffLines, theme) {
