@@ -1365,12 +1365,12 @@ export default async function diffRendererExtension(pi) {
                         const label = s.change.action === "add" ? "add" : s.change.action === "delete" ? "delete" : "update";
                         const hdr = `\x1b[0m${theme.fg("toolTitle", theme.bold(formatToolHeaderName(label)))} ${formatToolHeaderPath(theme, sp(s.change.path))}  ${summarizeThemed(s.parsed.added, s.parsed.removed, theme)}`;
                         out.push(hdr);
-                        out.push("");
+                        out.push("\x1b[0m"); // explicit reset: blank stays dark even under active bg
                         out.push(bgLine("", width));
                         const body = await renderPaddedCompactDiff(s.parsed, s.language, MAX_PREVIEW_LINES, colors, width);
                         out.push(body);
                         out.push(bgLine("", width));
-                        out.push("");
+                        out.push("\x1b[0m"); // explicit reset: blank stays dark, ends the green run
                     }
                     return `${out.join("\n")}\x1b[0m`;
                 },
