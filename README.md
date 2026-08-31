@@ -1,42 +1,126 @@
 # pi-approve-diffs
 
-Pre-apply approval gate for [pi](https://pi.dev)'s `write` / `edit` / `hashline_edit` tools, with
-Shiki syntax-highlighted, word-emphasized diffs (vendored from
-[@heyhuynhgiabuu/pi-diff](https://github.com/buddingnewinsights/pi-diff), MIT).
+**Approve, decline, or steer every file change before it happens — with syntax-highlighted diffs.**
 
-Nothing touches disk before you decide:
+A [pi](https://pi.dev) extension that gates pi's file-mutating tools (`write`, `edit`,
+`hashline_edit`, `apply_patch`) behind a review step. Nothing touches disk until you say so.
 
-- **↑ ↓** — move between actions · **Enter** — confirm selected
-- **y / a / n / s** — hotkeys: approve / approve-all-session / decline / steer
-- **Tab** — toggle split / unified view
-- **j k / PgUp PgDn b Space / Home End** — scroll the diff
+```
+──────────────────────────────────────────────────────────────────
+ approve-diffs +1 -1 · edit · src/app.ts
 
-Command: `/approve-diff on|off|toggle|yolo|status` (persisted in
-`~/.pi/agent/extensions/pi-approve-diffs.json`).
+   function greet(name: string) {
+ -   console.log("hello " + name);
+ +   console.log(`hello, ${name}!`);
+     return name.length;
+   }
 
-## Install (local)
+ ❯ ▐ Approve                 ▌ y
+   ▐ Approve all (session)   ▌ a
+   ▐ Decline                 ▌ n
+   ▐ Steer — type guidance    ▌ s
 
-```bash
-pi install ~/Projects/pi-approve-diffs
+ tab unified · j/k scroll · PgUp/PgDn page
+──────────────────────────────────────────────────────────────────
 ```
 
-or add its absolute path to the `packages` array in `~/.pi/agent/settings.json`, then `/reload`.
+The diff renders with a dark background and green/red only on changed lines —
+no giant colored slab. After you approve, the change lands and the result
+renders as a green-highlighted box in the transcript (toggleable, see below).
+
+## Install
+
+```bash
+pi install git:https://github.com/flatala/pi-approve-diffs
+```
+
+Then restart pi (or `/reload`). Requires `pi` with extension support (≥ 0.84).
+
+To install from a local clone instead:
+
+```bash
+pi install ~/pi-approve-diffs
+```
+
+## The approval modal
+
+Appears docked at the bottom of the screen, right where you type. Every file
+change stops here first.
+
+| Key | Action |
+|---|---|
+| `↑` `↓` | move between actions |
+| `Enter` | confirm the selected action |
+| `y` / `a` / `n` / `s` | hotkeys: approve / approve-all-session / decline / steer |
+| `Tab` | toggle split ↔ unified diff view |
+| `j` `k` / `PgUp` `PgDn` `b` `Space` / `Home` `End` | scroll the diff |
+| `Esc` | decline |
+
+**Steer** declines the change *and* sends your typed guidance back to the
+agent ("declined, follow this instead: …"), so you can redirect it without a
+separate message.
+
+Multi-file changes (`apply_patch`) show each file as its own section —
+a dark header with `+N -M` stats, then the framed diff for that file.
+
+## Commands
+
+```
+/approve-diff              status
+/approve-diff on|off       enable / disable the gate (persisted)
+/approve-diff toggle       flip it
+/approve-diff yolo         stop asking for the rest of this session
+/approve-diff results on|off   toggle post-approval green result boxes
+```
+
+## Post-approval result boxes
+
+Approved changes render in the transcript as green-backgrounded diff boxes
+(dark header line, framed diff body). If you prefer a quiet transcript:
+
+```bash
+/approve-diff results off
+```
+
+…then `/reload`. Declines and steers always show their reason either way.
+
+## Configuration
+
+`~/.pi/agent/extensions/pi-approve-diffs.json`:
+
+```json
+{
+  "enabled": true,
+  "results": true
+}
+```
+
+- `enabled` — gate on/off (also `/approve-diff on|off`)
+- `results` — post-approval highlight boxes (also `/approve-diff results on|off`)
+
+Both are safe to delete; defaults restore on next start.
 
 ## Dev
 
 ```bash
+git clone https://github.com/flatala/pi-approve-diffs
+cd pi-approve-diffs
 npm install
 npm run typecheck   # tsc --noEmit
 npm run check       # assert-based self-check of the vendored renderer
 pi -e ./src/index.ts
 ```
 
-## Push to GitHub (private)
+## How it works
 
-```bash
-gh repo create pi-approve-diffs --private --source=. --push
-```
+`src/index.ts` hooks pi's `tool_call` event, builds the pre-apply diff in
+`src/preview.ts`, and shows the modal from `src/ui.ts` via `ctx.ui.custom`.
+Diff rendering is vendored from
+[@heyhuynhgiabuu/pi-diff](https://github.com/buddingnewinsights/pi-diff)
+(Shiki-powered, MIT — see `src/vendor/pi-diff/LICENSE`), patched for this
+extension: pending calls stay neutral, results only highlight after approval.
 
 ## License
 
-MIT — see LICENSE. The vendored renderer keeps its upstream MIT notice.
+MIT — see [LICENSE](LICENSE). The vendored renderer keeps its upstream MIT
+notice.
