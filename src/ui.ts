@@ -2,7 +2,10 @@ import { Key, matchesKey, truncateToWidth, visibleWidth, type Component, type Th
 import { __testing } from "./vendor/pi-diff/index.js";
 import type { Preview } from "./preview.js";
 
-const { renderSplit, renderUnified, shouldUseSplit } = __testing;
+const { renderSplit, renderUnified } = __testing;
+const shouldUseSplit = __testing.shouldUseSplit as
+	| ((diff: Preview["diff"], tw: number | undefined, maxRows?: number) => boolean)
+	| undefined;
 
 export type Decision =
 	| { action: "approve" }
@@ -14,7 +17,8 @@ type TuiLike = { terminal: { rows: number; columns: number } };
 
 /** Apply pi's theme to the vendored renderer so diff backgrounds match the UI. */
 export function applyPiTheme(theme: unknown): void {
-	if (theme) __testing.resolveDiffColors(theme);
+	// ponytail: stale transforms may miss this export — degrade to default palette
+	if (theme && typeof __testing.resolveDiffColors === "function") __testing.resolveDiffColors(theme);
 }
 
 const printable = (data: string) => data.length > 0 && ![...data].some((ch) => ch < " ");
@@ -165,9 +169,7 @@ export async function showApproval(
 
 	// width/balance-aware default, mirroring pi-diff's own wrapper
 	const initialView: "split" | "unified" =
-		shouldUseSplit(preview.diff, process.stdout.columns ?? 120) && !splitLines.some((l) => l.length === 0)
-			? "split"
-			: "unified";
+		shouldUseSplit?.(preview.diff, process.stdout.columns ?? 120) === false ? "unified" : "split";
 
 	return ctx.ui.custom<Decision>(
 		(tui, theme, _kb, done) =>
