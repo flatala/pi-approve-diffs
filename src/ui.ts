@@ -1,21 +1,32 @@
-import { Key, matchesKey, truncateToWidth, type Component, type ThemeLike } from "@earendil-works/pi-tui";
+import { Key, matchesKey, truncateToWidth, visibleWidth, type Component, type ThemeLike } from "@earendil-works/pi-tui";
 import { __testing } from "./vendor/pi-diff/index.js";
-const { renderSplit, renderUnified } = __testing;
 import type { Preview } from "./preview.js";
+
+const { renderSplit, renderUnified, shouldUseSplit } = __testing;
 
 export type Decision =
 	| { action: "approve" }
 	| { action: "yolo" }
 	| { action: "decline" }
-	| { action: "steer" };
+	| { action: "steer"; message?: string };
 
 type TuiLike = { terminal: { rows: number; columns: number } };
+
+/** Apply pi's theme to the vendored renderer so diff backgrounds match the UI. */
+export function applyPiTheme(theme: unknown): void {
+	if (theme) __testing.resolveDiffColors(theme);
+}
+
+const printable = (data: string) => data.length > 0 && ![...data].some((ch) => ch < " ");
 
 class ApprovalScreen implements Component {
 	private view: "split" | "unified";
 	private splitLines: string[];
 	private unifiedLines: string[];
 	private offset = 0;
+	private mode: "view" | "steer" = "view";
+	private steerBuffer = "";
+	private splitTooWide: boolean | undefined;
 	private tui: TuiLike;
 	private theme: ThemeLike;
 	private preview: Preview;
@@ -40,7 +51,12 @@ class ApprovalScreen implements Component {
 	}
 
 	private get lines(): string[] {
-		return this.view === "split" ? this.splitLines : this.unifiedLines;
+		if (this.view === "split" && !this.splitTooWide) return this.splitLines;
+		return this.unifiedLines;
+	}
+
+	private effectiveView(): string {
+		return this.lines === this.splitLines ? "split" : "unified";
 	}
 
 	private scroll(delta: number): void {
@@ -49,28 +65,47 @@ class ApprovalScreen implements Component {
 	}
 
 	private bodyRows(): number {
-		// header (~4) + footer (~1) + padding
-		return Math.max(3, this.tui.terminal.rows - 6);
+		// docked in the editor slot: cap the diff window at ~60% of the terminal
+		const capped = Math.floor(this.tui.terminal.rows * 0.6);
+		return Math.max(5, Math.min(capped, 40)) - 3 - this.preview.warnings.length;
 	}
 
 	handleInput(data: string): void {
+		if (this.mode === "steer") {
+			if (matchesKey(data, Key.enter)) {
+				this.done({ action: "steer", message: this.steerBuffer.trim() });
+			} else if (matchesKey(data, Key.escape)) {
+				this.mode = "view";
+				this.steerBuffer = "";
+			} else if (matchesKey(data, Key.backspace)) {
+				this.steerBuffer = this.steerBuffer.slice(0, -1);
+			} else if (printable(data)) {
+				this.steerBuffer += data;
+			}
+			return;
+		}
+
 		if (matchesKey(data, Key.enter) || data === "y") this.done({ action: "approve" });
 		else if (data === "a") this.done({ action: "yolo" });
 		else if (matchesKey(data, Key.escape) || data === "n" || data === "q")
 			this.done({ action: "decline" });
-		else if (data === "s") this.done({ action: "steer" });
-		else if (matchesKey(data, Key.tab))
-			this.view = this.view === "split" ? "unified" : "split";
+		else if (data === "s") this.mode = "steer";
+		else if (matchesKey(data, Key.tab)) this.view = this.effectiveView() === "split" ? "unified" : "split";
 		else if (matchesKey(data, Key.up) || data === "k") this.scroll(-1);
 		else if (matchesKey(data, Key.down) || data === "j") this.scroll(1);
-		else if (data === "b" || matchesKey(data, "pageup")) this.scroll(-this.bodyRows());
-		else if (data === " " || matchesKey(data, "pagedown")) this.scroll(this.bodyRows());
+		else if (matchesKey(data, Key.pageUp)) this.scroll(-this.bodyRows());
+		else if (matchesKey(data, Key.pageDown) || data === " ") this.scroll(this.bodyRows());
 		else if (matchesKey(data, Key.home)) this.offset = 0;
 		else if (matchesKey(data, Key.end)) this.scroll(this.lines.length);
 	}
 
 	render(width: number): string[] {
 		const p = this.preview;
+		if (this.splitTooWide === undefined) {
+			// split only when every line fits the terminal — otherwise stacked unified
+			this.splitTooWide = this.splitLines.some((l) => visibleWidth(l) > width);
+		}
+		if (this.effectiveView() === "split" && this.splitTooWide) this.offset = 0;
 		const rows = this.bodyRows();
 		const max = Math.max(0, this.lines.length - rows);
 		this.offset = Math.min(this.offset, max);
@@ -80,16 +115,25 @@ class ApprovalScreen implements Component {
 			` +${p.diff.added} -${p.diff.removed} · ${p.toolName} · ${p.path}`,
 		);
 		const header = [
-			this.theme.bold(this.theme.fg("accent", `approve-diffs — ${p.toolName}`)) + stats,
+			this.theme.bold(this.theme.fg("accent", "approve-diffs")) + stats,
 			...p.warnings.map((w) => this.theme.fg("warning", ` ⚠ ${w}`)),
 		];
 
 		const window_ = this.lines.slice(this.offset, this.offset + rows).map((l) => truncateToWidth(l, width));
-		const scrolled = this.offset > 0 || this.offset < max ? ` (${this.offset + 1}–${Math.min(this.lines.length, this.offset + rows)}/${this.lines.length})` : "";
-		const footer = this.theme.fg(
-			"dim",
-			` enter approve · a always (session) · n decline · s steer · tab ${this.view === "split" ? "unified" : "split"}${scrolled}`,
-		);
+		const shown = `(${this.offset + 1}–${Math.min(this.lines.length, this.offset + rows)}/${this.lines.length})`;
+		const scrolled = this.lines.length > rows ? ` ${shown}` : "";
+
+		let footer: string;
+		if (this.mode === "steer") {
+			footer =
+				this.theme.fg("accent", ` steer > ${this.steerBuffer}█`) +
+				this.theme.fg("dim", "  (enter send · esc cancel)");
+		} else {
+			footer = this.theme.fg(
+				"dim",
+				` enter approve · a always (session) · n decline · s steer · tab ${this.effectiveView() === "split" ? "unified" : "split"}${scrolled}`,
+			);
+		}
 
 		return [...header, "", ...window_, "", footer].map((l) => truncateToWidth(l, width));
 	}
@@ -113,16 +157,21 @@ export async function showApproval(
 		};
 	},
 	preview: Preview,
-	initialView: "split" | "unified",
 ): Promise<Decision> {
 	const [splitLines, unifiedLines] = await Promise.all([
 		renderView(preview, "split"),
 		renderView(preview, "unified"),
 	]);
 
+	// width/balance-aware default, mirroring pi-diff's own wrapper
+	const initialView: "split" | "unified" =
+		shouldUseSplit(preview.diff, process.stdout.columns ?? 120) && !splitLines.some((l) => l.length === 0)
+			? "split"
+			: "unified";
+
 	return ctx.ui.custom<Decision>(
 		(tui, theme, _kb, done) =>
 			new ApprovalScreen({ tui, theme, preview, splitLines, unifiedLines, initialView, done }),
-		{ overlay: true, overlayOptions: { width: "100%", maxHeight: "100%" } },
+		// no overlay: pi docks the component into the editor slot at the bottom of the screen
 	);
 }

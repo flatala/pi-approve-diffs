@@ -58,6 +58,8 @@ export declare const __testing: {
     parseDiff: typeof parseDiff;
     parsePatchFiles: typeof parsePatchFiles;
     resolveSepStyle: typeof resolveSepStyle;
+    resolveDiffColors: (theme: unknown) => void;
+    shouldUseSplit: (diff: ParsedDiff, tw: number | undefined, maxRows?: number) => boolean;
     renderSplit: typeof renderSplit;
     renderUnified: typeof renderUnified;
 };

@@ -1174,6 +1174,8 @@ export const __testing = {
     resolveSepStyle,
     renderSplit,
     renderUnified,
+    resolveDiffColors, // pi-approve-diffs: apply pi theme palette to diff backgrounds
+    shouldUseSplit, // pi-approve-diffs: width/balance-aware split-vs-unified choice
 };
 export default async function diffRendererExtension(pi) {
     // Apply diff theme palette from settings/presets before rendering

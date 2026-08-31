@@ -1,15 +1,9 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { loadConfig, saveConfig } from "./config.js";
 import { buildPreview } from "./preview.js";
-import { showApproval } from "./ui.js";
+import { applyPiTheme, showApproval } from "./ui.js";
 
 const GATED_TOOLS = new Set(["write", "edit", "hashline_edit"]);
-
-function pickInitialView(defaultView: "auto" | "split" | "unified"): "split" | "unified" {
-	if (defaultView !== "auto") return defaultView;
-	const columns = process.stdout.columns ?? 120;
-	return columns >= 100 ? "split" : "unified";
-}
 
 export default function piApproveDiffs(pi: ExtensionAPI) {
 	let sessionYolo = false;
@@ -50,8 +44,8 @@ export default function piApproveDiffs(pi: ExtensionAPI) {
 		const preview = await buildPreview(event.toolName, event.input as never);
 		if (!preview) return;
 
-		const decision = await showApproval(ctx as never, preview, pickInitialView(config.defaultView));
-
+		applyPiTheme((ctx.ui as { theme?: unknown }).theme);
+		const decision = await showApproval(ctx as never, preview);
 		if (decision.action === "approve") return;
 		if (decision.action === "yolo") {
 			sessionYolo = true;
@@ -59,11 +53,8 @@ export default function piApproveDiffs(pi: ExtensionAPI) {
 		}
 
 		let reason = `User declined changes to ${preview.path}.`;
-		if (decision.action === "steer") {
-			const message = await ctx.ui.input("Steer — what should the agent do instead?");
-			if (message?.trim()) {
-				reason = `User declined changes to ${preview.path}. Follow this guidance instead: ${message.trim()}`;
-			}
+		if (decision.action === "steer" && decision.message) {
+			reason = `User declined changes to ${preview.path}. Follow this guidance instead: ${decision.message}`;
 		}
 		return { block: true, reason };
 	});
