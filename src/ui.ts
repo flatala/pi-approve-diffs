@@ -26,11 +26,20 @@ export function resetPalette(): void {
 
 const printable = (data: string) => data.length > 0 && ![...data].some((ch) => ch < " ");
 
+const ACTIONS = [
+	{ action: "approve", label: "Approve" },
+	{ action: "yolo", label: "Approve all (session)" },
+	{ action: "decline", label: "Decline" },
+	{ action: "steer", label: "Steer — type guidance" },
+] as const;
+type ActionIndex = 0 | 1 | 2 | 3;
+
 class ApprovalScreen implements Component {
 	private view: "split" | "unified";
 	private splitLines: string[];
 	private unifiedLines: string[];
 	private offset = 0;
+	private selected: ActionIndex = 0;
 	private mode: "view" | "steer" = "view";
 	private steerBuffer = "";
 	private splitTooWide: boolean | undefined;
@@ -72,9 +81,10 @@ class ApprovalScreen implements Component {
 	}
 
 	private bodyRows(): number {
-		// docked in the editor slot: cap the diff window at ~60% of the terminal
-		const capped = Math.floor(this.tui.terminal.rows * 0.6);
-		return Math.max(5, Math.min(capped, 40)) - 3 - this.preview.warnings.length;
+		// docked in the editor slot: cap the diff window at ~60% of the terminal,
+		// minus header/warnings/blank/action list/hint chrome
+		const capped = Math.min(Math.floor(this.tui.terminal.rows * 0.6), 40);
+		return Math.max(3, capped - 8 - this.preview.warnings.length);
 	}
 
 	handleInput(data: string): void {
@@ -92,14 +102,27 @@ class ApprovalScreen implements Component {
 			return;
 		}
 
-		if (matchesKey(data, Key.enter) || data === "y") this.done({ action: "approve" });
+		// hotkey accelerators
+		if (data === "y") this.done({ action: "approve" });
 		else if (data === "a") this.done({ action: "yolo" });
-		else if (matchesKey(data, Key.escape) || data === "n" || data === "q")
-			this.done({ action: "decline" });
-		else if (data === "s") this.mode = "steer";
+		else if (data === "n" || matchesKey(data, Key.escape)) this.done({ action: "decline" });
+		else if (data === "s") {
+			this.selected = 3;
+			this.mode = "steer";
+		}
+		// list navigation — arrows move the selection
+		else if (matchesKey(data, Key.up)) this.selected = ((this.selected + 3) % 4) as ActionIndex;
+		else if (matchesKey(data, Key.down)) this.selected = ((this.selected + 1) % 4) as ActionIndex;
+		// enter confirms the selected action
+		else if (matchesKey(data, Key.enter)) {
+			const action = ACTIONS[this.selected].action;
+			if (action === "steer") this.mode = "steer";
+			else this.done({ action });
+		}
+		// view + scrolling
 		else if (matchesKey(data, Key.tab)) this.view = this.effectiveView() === "split" ? "unified" : "split";
-		else if (matchesKey(data, Key.up) || data === "k") this.scroll(-1);
-		else if (matchesKey(data, Key.down) || data === "j") this.scroll(1);
+		else if (data === "k") this.scroll(-1);
+		else if (data === "j") this.scroll(1);
 		else if (matchesKey(data, Key.pageUp)) this.scroll(-this.bodyRows());
 		else if (matchesKey(data, Key.pageDown) || data === " ") this.scroll(this.bodyRows());
 		else if (matchesKey(data, Key.home)) this.offset = 0;
@@ -127,19 +150,19 @@ class ApprovalScreen implements Component {
 		const shown = `(${this.offset + 1}–${Math.min(this.lines.length, this.offset + rows)}/${this.lines.length})`;
 		const scrolled = this.lines.length > rows ? ` ${shown}` : "";
 
-		let footer: string;
-		if (this.mode === "steer") {
-			footer =
-				this.theme.fg("accent", ` steer > ${this.steerBuffer}█`) +
-				this.theme.fg("dim", "  (enter send · esc cancel)");
-		} else {
-			footer = this.theme.fg(
-				"dim",
-				` enter approve · a always (session) · n decline · s steer · tab ${this.effectiveView() === "split" ? "unified" : "split"}${scrolled}`,
-			);
-		}
+		const actionLines = ACTIONS.map((a, i) =>
+			i === this.selected
+				? `${this.theme.fg("accent", "❯ ")} ${this.theme.bold(a.label)}`
+				: `    ${this.theme.fg("dim", a.label)}`,
+		);
 
-		return [...header, "", ...window_, "", footer].map((l) => truncateToWidth(l, width));
+		const bottom =
+			this.mode === "steer"
+				? this.theme.fg("accent", ` steer > ${this.steerBuffer}█`) +
+						this.theme.fg("dim", "  (enter send · esc cancel)")
+					: this.theme.fg("dim", ` tab ${this.effectiveView() === "split" ? "unified" : "split"} · j/k scroll · PgUp/PgDn page${scrolled}`);
+
+		return [...header, "", ...window_, "", ...actionLines, bottom].map((l) => truncateToWidth(l, width));
 	}
 
 	invalidate(): void {}

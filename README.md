@@ -6,12 +6,10 @@ Shiki syntax-highlighted, word-emphasized diffs (vendored from
 
 Nothing touches disk before you decide:
 
-- **Enter / y** — approve
-- **a** — approve and stop asking for the rest of the session (yolo)
-- **Esc / n** — decline (agent sees the block reason)
-- **s** — steer: decline and type guidance the agent must follow instead
+- **↑ ↓** — move between actions · **Enter** — confirm selected
+- **y / a / n / s** — hotkeys: approve / approve-all-session / decline / steer
 - **Tab** — toggle split / unified view
-- **↑ ↓ k j / PgUp PgDn b Space / Home End** — scroll
+- **j k / PgUp PgDn b Space / Home End** — scroll the diff
 
 Command: `/approve-diff on|off|toggle|yolo|status` (persisted in
 `~/.pi/agent/extensions/pi-approve-diffs.json`).
