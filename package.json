@@ -1,0 +1,28 @@
+{
+  "name": "pi-approve-diffs",
+  "version": "0.1.0",
+  "description": "Pre-apply approve/decline/steer gate for pi's write/edit tools with Shiki-highlighted diffs (renderer vendored from @heyhuynhgiabuu/pi-diff, MIT)",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@shikijs/cli": "^4.0.2",
+    "diff": "^7.0.0",
+    "xxhash-wasm": "^1.1.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "^5.0.0"
+  },
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  }
+}
