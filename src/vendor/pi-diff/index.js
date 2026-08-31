@@ -1520,6 +1520,7 @@ export default async function diffRendererExtension(pi) {
     registerToolIfEnabled("write", {
         ...origWrite,
         name: "write",
+        renderShell: "self", // pi-approve-diffs: own framing — no container-wide success bg
         async execute(tid, params, sig, upd, ctx) {
             const fp = params.path ?? params.file_path ?? "";
             let old = null;
@@ -1699,6 +1700,7 @@ export default async function diffRendererExtension(pi) {
     registerToolIfEnabled("edit", {
         ...origEdit,
         name: "edit",
+        renderShell: "self", // pi-approve-diffs: own framing — no container-wide success bg
         parameters: {
             ...(origEdit.parameters || {}),
             properties: {
@@ -1828,6 +1830,7 @@ export default async function diffRendererExtension(pi) {
     });
     registerToolIfEnabled("apply_patch", {
         name: "apply_patch",
+        renderShell: "self", // pi-approve-diffs: own framing — no container-wide success bg
         label: "apply_patch",
         description: "Multi-file patch engine. One call can add, update, delete, or move multiple files. Uses structured JSON changes array.",
         parameters: {
