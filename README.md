@@ -17,10 +17,10 @@ Command: `/approve-diff on|off|toggle|yolo|status` (persisted in
 ## Install (local)
 
 ```bash
-pi install /Users/franciszeklatala/Projects/pi-approve-diffs
+pi install ~/Projects/pi-approve-diffs
 ```
 
-or add the absolute path to the `packages` array in `~/.pi/agent/settings.json`, then `/reload`.
+or add its absolute path to the `packages` array in `~/.pi/agent/settings.json`, then `/reload`.
 
 ## Dev
 
