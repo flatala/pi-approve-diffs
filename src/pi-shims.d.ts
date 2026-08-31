@@ -40,6 +40,7 @@ declare module "@earendil-works/pi-tui" {
 	export interface ThemeLike {
 		fg(name: string, text: string): string;
 		bold(text: string): string;
+		bg?(name: string, text: string): string;
 	}
 
 	export const Key: Record<string, string>;

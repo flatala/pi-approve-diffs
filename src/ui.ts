@@ -27,12 +27,13 @@ export function resetPalette(): void {
 const printable = (data: string) => data.length > 0 && ![...data].some((ch) => ch < " ");
 
 const ACTIONS = [
-	{ action: "approve", label: "Approve" },
-	{ action: "yolo", label: "Approve all (session)" },
-	{ action: "decline", label: "Decline" },
-	{ action: "steer", label: "Steer — type guidance" },
+	{ action: "approve", label: "Approve", hot: "y" },
+	{ action: "yolo", label: "Approve all (session)", hot: "a" },
+	{ action: "decline", label: "Decline", hot: "n" },
+	{ action: "steer", label: "Steer — type guidance", hot: "s" },
 ] as const;
 type ActionIndex = 0 | 1 | 2 | 3;
+const ACTION_LABEL_WIDTH = Math.max(...ACTIONS.map((a) => a.label.length));
 
 class ApprovalScreen implements Component {
 	private view: "split" | "unified";
@@ -129,6 +130,30 @@ class ApprovalScreen implements Component {
 		else if (matchesKey(data, Key.end)) this.scroll(this.lines.length);
 	}
 
+	private semanticOf(action: string): "success" | "error" | "accent" {
+		return action === "decline" ? "error" : action === "steer" ? "accent" : "success";
+	}
+
+	private actionLine(i: number): string {
+		const a = ACTIONS[i];
+		const pad = a.label.padEnd(ACTION_LABEL_WIDTH);
+		const semantic = this.semanticOf(a.action);
+		const hot = this.theme.fg("dim", ` ${a.hot}`);
+		if (i !== this.selected) {
+			return `   ${this.theme.fg("dim", `▐ ${pad} ▌`)}${hot}`;
+		}
+		const inner = ` ${this.theme.bold(pad)} `;
+		let filled: string;
+		const bgName = semantic === "error" ? "toolErrorBg" : semantic === "success" ? "toolSuccessBg" : undefined;
+		const bg = bgName ? this.theme.bg?.(bgName, inner) : undefined;
+		if (bg) {
+			filled = bg;
+		} else {
+			filled = `\x1b[7m${inner}\x1b[27m`;
+		}
+		return `${this.theme.fg(semantic, "❯ ▐")}${filled}${this.theme.fg(semantic, "▌")}${hot}`;
+	}
+
 	render(width: number): string[] {
 		const p = this.preview;
 		if (this.splitTooWide === undefined) {
@@ -150,11 +175,7 @@ class ApprovalScreen implements Component {
 		const shown = `(${this.offset + 1}–${Math.min(this.lines.length, this.offset + rows)}/${this.lines.length})`;
 		const scrolled = this.lines.length > rows ? ` ${shown}` : "";
 
-		const actionLines = ACTIONS.map((a, i) =>
-			i === this.selected
-				? `${this.theme.fg("accent", "❯ ")} ${this.theme.bold(a.label)}`
-				: `    ${this.theme.fg("dim", a.label)}`,
-		);
+		const actionLines = ACTIONS.map((_, i) => this.actionLine(i));
 
 		const bottom =
 			this.mode === "steer"
