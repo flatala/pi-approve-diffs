@@ -30,13 +30,11 @@ renders as a green-highlighted box in the transcript (toggleable, see below).
 
 ## Examples
 
-| Edit approval — split view | New-file write |
-|---|---|
-| ![Edit approval with side-by-side diff and action buttons](media/example-1-edit-split.png) | ![New-file write, all additions](media/example-2-new-file.png) |
+![Edit approval — split view with action buttons](media/example-1-edit-split.png)
 
-![Multi-file apply_patch rendered as per-file sections](media/example-3-multi-file.png)
+![New-file write — all additions](media/example-2-new-file.png)
 
-*Multi-file `apply_patch` — each file gets its own dark header and framed diff.*
+![Multi-file apply_patch — per-file sections](media/example-3-multi-file.png)
 
 ## Install
 
@@ -129,6 +127,12 @@ Diff rendering is vendored from
 [@heyhuynhgiabuu/pi-diff](https://github.com/buddingnewinsights/pi-diff)
 (Shiki-powered, MIT — see `src/vendor/pi-diff/LICENSE`), patched for this
 extension: pending calls stay neutral, results only highlight after approval.
+
+## Inspired by
+
+- [pi-show-diffs](https://github.com/xRyul/pi-show-diffs) — the pre-apply approval modal concept
+- [pi-diffloop](https://github.com/lucaspiritogit/pi-diffloop) — approve / decline / steer actions
+- [@heyhuynhgiabuu/pi-diff](https://github.com/buddingnewinsights/pi-diff) — the Shiki renderer, vendored here
 
 ## License
 
