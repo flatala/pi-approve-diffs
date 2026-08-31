@@ -67,7 +67,11 @@ export default async function piApproveDiffs(pi: ExtensionAPI) {
 			return;
 		}
 
-		let reason = `User declined changes to ${preview.path}.`;
+		let reason = `User declined changes to ${preview.path}`;
+		if (preview.sections.length > 1) {
+			reason += ` (+${preview.sections.length - 1} more file${preview.sections.length > 2 ? "s" : ""})`;
+		}
+		reason += ".";
 		if (decision.action === "steer" && decision.message) {
 			reason = `User declined changes to ${preview.path}. Follow this guidance instead: ${decision.message}`;
 		}

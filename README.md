@@ -11,7 +11,7 @@ Nothing touches disk before you decide:
 - **Esc / n** — decline (agent sees the block reason)
 - **s** — steer: decline and type guidance the agent must follow instead
 - **Tab** — toggle split / unified view
-- **↑ ↓ k j / PgUp PgDn / Home End** — scroll
+- **↑ ↓ k j / PgUp PgDn b Space / Home End** — scroll
 
 Command: `/approve-diff on|off|toggle|yolo|status` (persisted in
 `~/.pi/agent/extensions/pi-approve-diffs.json`).
