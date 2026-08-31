@@ -192,7 +192,7 @@ class ApprovalScreen implements Component {
 async function renderSections(preview: Preview, view: "split" | "unified"): Promise<string[]> {
 	const render = view === "split" ? renderSplit : renderUnified;
 	const out: string[] = [];
-	for (const section of preview.sections) {
+	for (const [i, section] of preview.sections.entries()) {
 		if (!section.diff) {
 			out.push(section.path + (section.note ? ` — ${section.note}` : ""));
 			continue;
@@ -200,6 +200,8 @@ async function renderSections(preview: Preview, view: "split" | "unified"): Prom
 		if (preview.sections.length > 1) out.push(section.path);
 		const text = await render(section.diff, section.language as never);
 		out.push(...text.split("\n"));
+		// one empty row beneath each file's change for separation (not after the last)
+		if (i < preview.sections.length - 1) out.push("");
 	}
 	return out;
 }
