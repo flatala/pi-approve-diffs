@@ -1554,11 +1554,11 @@ export default async function diffRendererExtension(pi) {
             if (args?.content && !ctx.argsComplete) {
                 const n = String(args.content).split("\n").length;
                 const suffix = `${TOOL_RESULT_INDENT}${theme.fg("muted", `(${n} lines…)`)}${stats ? ` ${stats.trimStart()}` : ""}`;
-                setToolHeaderBg(text);
+                clearToolHeaderBg(text); // pi-approve-diffs: pending calls stay neutral; green only after approval
                 text.setText(formatToolFrameHeaderText({ label, filePath: fp, theme, suffix, topPad: 0, bottomPad: 1 }));
                 return text;
             }
-                        setToolHeaderBg(text);
+                        clearToolHeaderBg(text); // pi-approve-diffs: pending calls stay neutral
             text.setText(formatToolFrameHeaderText({ label, filePath: fp, theme, suffix: stats, topPad: 0, bottomPad: 1 }));
             return text;
         },
@@ -1739,7 +1739,7 @@ export default async function diffRendererExtension(pi) {
             resolvePreviewDiffColors(theme);
             const stats = editCallStatsSuffix(ctx.toolCallId, theme);
             if (ctx.argsComplete && operations.length > 0) {
-                setToolHeaderBg(text);
+                clearToolHeaderBg(text); // pi-approve-diffs: pending calls stay neutral
                 text.setText(formatToolFrameHeaderText({
                     label: "edit",
                     filePath: fp,
@@ -1866,7 +1866,7 @@ export default async function diffRendererExtension(pi) {
             const suffix = count
                 ? `${TOOL_RESULT_INDENT}${theme.fg("muted", `(${count} change${count === 1 ? "" : "s"})`)}${TOOL_RESULT_INDENT}${summarizeApplyPatchChanges(changes, theme)}`
                 : `${TOOL_RESULT_INDENT}${theme.fg("muted", "(waiting for changes)")}`;
-            setToolHeaderBg(text);
+            clearToolHeaderBg(text); // pi-approve-diffs: pending calls stay neutral
             text.setText(formatToolFrameHeaderText({
                 meta: `${theme.fg("toolTitle", theme.bold(formatToolHeaderName("apply_patch")))}${suffix}`,
                 topPad: 0,
