@@ -665,12 +665,15 @@ function summarizeThemed(a, d, theme) {
     return summarize(a, d);
 }
 function summarize(a, d) {
+    // pi-approve-diffs: RST carries BG_BASE for diff rows; header stats must
+    // fully reset or the green base bg leaks across the rest of the header row
+    const RESET = "\x1b[0m";
     const p = [];
     if (a > 0)
-        p.push(`${FG_ADD}+${a}${RST}`);
+        p.push(`${FG_ADD}+${a}${RESET}`);
     if (d > 0)
-        p.push(`${FG_DEL}-${d}${RST}`);
-    return p.length ? p.join(" ") : `${FG_DIM}no changes${RST}`;
+        p.push(`${FG_DEL}-${d}${RESET}`);
+    return p.length ? p.join(" ") : `${FG_DIM}no changes${RESET}`;
 }
 function rule(w) {
     return `${BG_BASE}${FG_RULE}${"─".repeat(w)}${RST}`;
@@ -1440,9 +1443,7 @@ export default async function diffRendererExtension(pi) {
             const h = header(width);
             const bottomPad = Math.max(0, frame?.previewBottomPad ?? 0);
             const bottom = Array.from({ length: bottomPad }, () => bgLine("", width)).join("\n");
-            // pi-approve-diffs: with omitHeader the body started flush after the call's
-            // stats on the same row — force a leading blank line to separate them
-            const main = h ? `${h}\n${body}` : frame?.omitHeader ? `\n${body}` : body;
+            const main = h ? `${h}\n${body}` : body;
             return bottom ? `${main}\n${bottom}` : main;
         };
         text.__piDiffTask = {
