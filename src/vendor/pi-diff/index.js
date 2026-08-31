@@ -1358,17 +1358,20 @@ export default async function diffRendererExtension(pi) {
                 invalidate: ctx.invalidate,
                 key: (width) => `${pk}:${width}`,
                 render: async (width) => {
+                    // layout: dark header row → green pad → body → (next header, no
+                    // green between a body and the next header) → one closing pad.
+                    // each header resets SGR so no green bleeds onto it.
                     const out = [];
                     for (const s of sections) {
                         const label = s.change.action === "add" ? "add" : s.change.action === "delete" ? "delete" : "update";
-                        const hdr = `${theme.fg("toolTitle", theme.bold(formatToolHeaderName(label)))} ${formatToolHeaderPath(theme, sp(s.change.path))}  ${summarizeThemed(s.parsed.added, s.parsed.removed, theme)}`;
+                        const hdr = `\x1b[0m${theme.fg("toolTitle", theme.bold(formatToolHeaderName(label)))} ${formatToolHeaderPath(theme, sp(s.change.path))}  ${summarizeThemed(s.parsed.added, s.parsed.removed, theme)}`;
                         out.push(hdr);
                         out.push(bgLine("", width));
                         const body = await renderPaddedCompactDiff(s.parsed, s.language, MAX_PREVIEW_LINES, colors, width);
                         out.push(body);
-                        out.push(bgLine("", width));
                     }
-                    return out.join("\n");
+                    out.push(bgLine("", width));
+                    return `${out.join("\n")}\x1b[0m`;
                 },
             };
         }
