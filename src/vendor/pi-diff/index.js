@@ -1440,7 +1440,9 @@ export default async function diffRendererExtension(pi) {
             const h = header(width);
             const bottomPad = Math.max(0, frame?.previewBottomPad ?? 0);
             const bottom = Array.from({ length: bottomPad }, () => bgLine("", width)).join("\n");
-            const main = h ? `${h}\n${body}` : body;
+            // pi-approve-diffs: with omitHeader the body started flush after the call's
+            // stats on the same row — force a leading blank line to separate them
+            const main = h ? `${h}\n${body}` : frame?.omitHeader ? `\n${body}` : body;
             return bottom ? `${main}\n${bottom}` : main;
         };
         text.__piDiffTask = {
