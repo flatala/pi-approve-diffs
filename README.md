@@ -39,14 +39,15 @@ renders as a green-highlighted box in the transcript (toggleable, see below).
 ## Install
 
 ```bash
-pi install git:https://github.com/flatala/pi-approve-diffs
+pi install pi-approve-diffs
 ```
 
 Then restart pi (or `/reload`). Requires `pi` with extension support (≥ 0.84).
 
-To install from a local clone instead:
+If the npm package is not available yet in your environment, install from GitHub or a local clone:
 
 ```bash
+pi install git:https://github.com/flatala/pi-approve-diffs
 pi install ~/pi-approve-diffs
 ```
 
@@ -118,6 +119,32 @@ npm run typecheck   # tsc --noEmit
 npm run check       # assert-based self-check of the vendored renderer
 pi -e ./src/index.ts
 ```
+
+## Publish
+
+Version with npm (choose one):
+
+```bash
+npm run release:patch
+npm run release:minor
+npm run release:major
+```
+
+Then push the version commit + tag:
+
+```bash
+git push --follow-tags
+```
+
+Publishing is handled by `/home/runner/work/pi-approve-diffs/pi-approve-diffs/.github/workflows/npm-publish.yml` on `v*` tags (or manual dispatch), and runs:
+
+```bash
+npm run prepublishOnly
+npm publish
+```
+
+Set repository secret `NPM_TOKEN` with publish access to the target npm package.
+After publish, `pi install pi-approve-diffs` should resolve once pi's package index refreshes.
 
 ## How it works
 

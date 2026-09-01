@@ -4,10 +4,36 @@
   "description": "Pre-apply approve/decline/steer gate for pi's write/edit tools with Shiki-highlighted diffs (renderer vendored from @heyhuynhgiabuu/pi-diff, MIT)",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flatala/pi-approve-diffs.git"
+  },
+  "homepage": "https://github.com/flatala/pi-approve-diffs#readme",
+  "bugs": {
+    "url": "https://github.com/flatala/pi-approve-diffs/issues"
+  },
+  "keywords": [
+    "pi",
+    "pi-extension",
+    "diff",
+    "approval",
+    "review"
+  ],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "prepublishOnly": "npm run typecheck && npm run check",
+    "release:patch": "npm version patch",
+    "release:minor": "npm version minor",
+    "release:major": "npm version major"
   },
   "dependencies": {
     "@shikijs/cli": "^4.0.2",
